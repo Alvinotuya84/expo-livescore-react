@@ -1,4 +1,4 @@
-# Riffle Validation - Offline-First Demo 🚀
+# Validation - Offline-First Demo 
 
 Hey there! 👋 This is a fun little experiment showing how to build an offline-first mobile app with some cool conflict resolution features. Think of it as a playground for testing out some interesting ideas about data sync and offline capabilities.
 

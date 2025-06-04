@@ -1,30 +1,20 @@
 import { useQuery as useLiveQuery } from '@livestore/react';
 import { useMutation } from '@tanstack/react-query';
-import { schema } from '../lib/livestore';
+import { Document } from '../lib/api';
+import { queries } from '../lib/livestore';
 import { syncWithServer, uploadLocalChanges } from '../lib/sync';
 
 // LiveStore queries
 export const useDocuments = () => {
-  return useLiveQuery(
-    schema.documents.select()
-      .where({ isDeleted: false })
-      .orderBy('updatedAt', 'desc')
-  );
+  return useLiveQuery(queries.activeDocuments$) as unknown as Document[];
 };
 
 export const useDocument = (id: string) => {
-  return useLiveQuery(
-    schema.documents.select()
-      .where({ id })
-      .first()
-  );
+  return useLiveQuery(queries.documentById$(id)) as unknown as Document;
 };
 
 export const useConflicts = () => {
-  return useLiveQuery(
-    schema.documents.select()
-      .where({ conflictStatus: 'pending' })
-  );
+  return useLiveQuery(queries.conflicts$) as unknown as Document[];
 };
 
 // React Query mutations
@@ -55,7 +45,7 @@ export const useDocumentOperations = () => {
     try {
       await syncMutation.mutateAsync();
       // After sync, upload any local changes
-      const documents = await useDocuments();
+      const documents = useDocuments();
       await uploadMutation.mutateAsync(documents);
     } catch (error) {
       console.error('Document operations failed:', error);

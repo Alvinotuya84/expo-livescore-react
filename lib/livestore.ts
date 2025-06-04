@@ -1,4 +1,4 @@
-import { Events, makeSchema, Schema, State } from '@livestore/livestore';
+import { Events, makeSchema, queryDb, Schema, State } from '@livestore/livestore';
 
 // Define SQLite tables
 export const tables = {
@@ -84,6 +84,34 @@ export const events = {
       isOnline: Schema.Boolean
     })
   })
+};
+
+// Define queries using queryDb
+export const queries = {
+  documents$: queryDb(
+    (get) => tables.documents.select(),
+    { label: 'documents' }
+  ),
+  
+  documentById$: (id: string) => queryDb(
+    (get) => tables.documents.select().where({ id }),
+    { label: 'documentById' }
+  ),
+  
+  activeDocuments$: queryDb(
+    (get) => tables.documents.select().where({ isDeleted: false }),
+    { label: 'activeDocuments' }
+  ),
+  
+  conflicts$: queryDb(
+    (get) => tables.documents.select().where({ conflictStatus: 'pending' }),
+    { label: 'conflicts' }
+  ),
+  
+  syncState$: queryDb(
+    (get) => tables.syncState.select().where({ id: 'current' }),
+    { label: 'syncState' }
+  )
 };
 
 // Define materializers

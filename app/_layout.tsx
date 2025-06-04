@@ -16,6 +16,7 @@ export default function RootLayout() {
         schema={schema}
         adapter={adapter}
         batchUpdates={batchUpdates}
+        storeId="default"
         renderLoading={({ stage }) => (
           <Stack>
             <Stack.Screen

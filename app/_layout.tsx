@@ -1,90 +1,115 @@
+import { Ionicons } from '@expo/vector-icons';
 import { makePersistedAdapter } from '@livestore/adapter-expo';
-import { LiveStoreProvider } from '@livestore/react';
+import type { Store } from '@livestore/livestore';
+import { createStorePromise } from '@livestore/livestore';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
-import { unstable_batchedUpdates as batchUpdates } from 'react-native';
+import { Tabs } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { unstable_batchedUpdates as batchUpdates, Text, View } from 'react-native';
 import { queryClient } from '../lib/api';
 import { schema } from '../lib/livestore';
+import { StoreContext } from '../lib/store';
 
 // Create adapter with SQLite persistence
 const adapter = makePersistedAdapter();
 
+// Define a specific storeId for the application
+const STORE_ID = 'expo-riffle-validate-store';
+
 export default function RootLayout() {
+  const [store, setStore] = useState<Store<typeof schema> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const initStore = async () => {
+      try {
+        const newStore = await createStorePromise({
+          schema,
+          adapter,
+          storeId: STORE_ID,
+          batchUpdates,
+        });
+        
+        if (mounted) {
+          setStore(newStore);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err as Error);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initStore();
+
+    return () => {
+      mounted = false;
+      if (store) {
+        store.shutdown();
+      }
+    };
+  }, []);
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: 'red' }}>Error: {error.message}</Text>
+      </View>
+    );
+  }
+
+  if (isLoading || !store) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
-      <LiveStoreProvider
-        schema={schema}
-        adapter={adapter}
-        batchUpdates={batchUpdates}
-        storeId="default"
-        renderLoading={({ stage }) => (
-          <Stack>
-            <Stack.Screen
-              name="index"
-              options={{
-                title: 'Loading...',
-                headerShown: true,
-              }}
-            />
-          </Stack>
-        )}
-        renderError={(error) => (
-          <Stack>
-            <Stack.Screen
-              name="index"
-              options={{
-                title: 'Error',
-                headerShown: true,
-              }}
-            />
-          </Stack>
-        )}
-      >
-        <Stack>
-          <Stack.Screen
+      <StoreContext.Provider value={store}>
+        <Tabs
+          screenOptions={{
+            tabBarActiveTintColor: '#007AFF',
+            tabBarInactiveTintColor: '#8E8E93',
+            headerShown: true,
+          }}
+        >
+          <Tabs.Screen
             name="index"
             options={{
               title: 'Documents',
-              headerShown: true,
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="document-text" size={size} color={color} />
+              ),
             }}
           />
-          <Stack.Screen
-            name="document/[id]"
-            options={{
-              title: 'Edit Document',
-              headerShown: true,
-            }}
-          />
-          <Stack.Screen
-            name="document/create"
-            options={{
-              title: 'New Document',
-              headerShown: true,
-            }}
-          />
-          <Stack.Screen
-            name="conflicts/index"
+          <Tabs.Screen
+            name="conflicts"
             options={{
               title: 'Conflicts',
-              headerShown: true,
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="warning" size={size} color={color} />
+              ),
             }}
           />
-          <Stack.Screen
-            name="conflicts/[id]"
-            options={{
-              title: 'Resolve Conflict',
-              headerShown: true,
-            }}
-          />
-          <Stack.Screen
-            name="settings/index"
+          <Tabs.Screen
+            name="settings"
             options={{
               title: 'Settings',
-              headerShown: true,
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="settings" size={size} color={color} />
+              ),
             }}
           />
-        </Stack>
-      </LiveStoreProvider>
+        </Tabs>
+      </StoreContext.Provider>
     </QueryClientProvider>
   );
 }

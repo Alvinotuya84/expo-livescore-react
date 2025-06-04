@@ -1,57 +1,117 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from '../../components/ui/LinearGradient';
+import { VStack } from '../../components/ui/VStack';
+import { useDocumentOperations } from '../../hooks/useDocuments';
+import type { Document } from '../../lib/api';
+import { queries } from '../../lib/livestore';
+import { useStore } from '../../lib/store';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+// Convert LiveStore document to API document
+const convertToApiDocument = (doc: any): Document => ({
+  id: doc.id,
+  content: doc.content,
+  version: doc.version,
+  clientId: doc.clientId,
+  clientTimestamp: doc.clientTimestamp,
+  serverTimestamp: doc.serverTimestamp || undefined,
+  isDeleted: doc.isDeleted,
+  conflictsWith: doc.conflictsWith || undefined,
+  conflictStatus: doc.conflictStatus,
+  createdAt: doc.createdAt,
+  updatedAt: doc.updatedAt,
+});
 
-export default function HomeScreen() {
+export default function DocumentList() {
+  const router = useRouter();
+  const store = useStore();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const { sync, isSyncing } = useDocumentOperations();
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    const loadDocuments = async () => {
+      const docs = await store.query(queries.activeDocuments$);
+      setDocuments(docs.map(convertToApiDocument));
+    };
+
+    loadDocuments();
+
+    // Subscribe to document changes
+    const unsubscribe = store.subscribe(queries.activeDocuments$, {
+      onUpdate: (docs) => {
+        setDocuments(docs.map(convertToApiDocument));
+      },
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [store]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await sync();
+    setRefreshing(false);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <LinearGradient
+        colors={['#007AFF', '#5856D6']}
+        style={{
+          padding: 20,
+          paddingTop: 60,
+          borderBottomLeftRadius: 20,
+          borderBottomRightRadius: 20,
+        }}
+      >
+        <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>
+          Documents
+        </Text>
+      </LinearGradient>
+
+      <VStack
+        style={{ flex: 1, padding: 20 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {documents?.map((doc) => (
+          <TouchableOpacity
+            key={doc.id}
+            onPress={() => router.push(`/document/${doc.id}`)}
+            style={{
+              backgroundColor: '#f8f9fa',
+              padding: 15,
+              borderRadius: 10,
+              marginBottom: 10,
+            }}
+          >
+            <Text style={{ fontSize: 16, color: '#000' }}>{doc.content}</Text>
+            <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 5 }}>
+              Last updated: {new Date(doc.updatedAt).toLocaleString()}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        <TouchableOpacity
+          onPress={() => router.push('/document/create')}
+          style={{
+            backgroundColor: '#007AFF',
+            padding: 15,
+            borderRadius: 10,
+            alignItems: 'center',
+            marginTop: 20,
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>
+            Create New Document
+          </Text>
+        </TouchableOpacity>
+      </VStack>
+    </View>
   );
 }
 

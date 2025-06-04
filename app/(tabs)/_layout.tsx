@@ -1,47 +1,42 @@
-import { Stack } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
 
 export default function TabsLayout() {
   return (
-    <Stack>
-      <Stack.Screen
-        name="index"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="conflicts"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="settings"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="document/[id]"
-        options={{
-          title: 'Edit Document',
-          headerShown: true,
-        }}
-      />
-      <Stack.Screen
-        name="document/create"
-        options={{
-          title: 'New Document',
-          headerShown: true,
-        }}
-      />
-      <Stack.Screen
-        name="conflicts/[id]"
-        options={{
-          title: 'Resolve Conflict',
-          headerShown: true,
-        }}
-      />
-    </Stack>
+    <Tabs
+    screenOptions={{
+      tabBarActiveTintColor: '#007AFF',
+      tabBarInactiveTintColor: '#8E8E93',
+      headerShown: false,
+    }}
+  >
+    <Tabs.Screen
+      name="index"
+      options={{
+        title: 'Documents',
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="document-text" size={size} color={color} />
+        ),
+      }}
+    />
+    <Tabs.Screen
+      name="conflicts"
+      options={{
+        title: 'Conflicts',
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="warning" size={size} color={color} />
+        ),
+      }}
+    />
+    <Tabs.Screen
+      name="settings"
+      options={{
+        title: 'Settings',
+        tabBarIcon: ({ color, size }) => (
+          <Ionicons name="settings" size={size} color={color} />
+        ),
+      }}
+    />
+  </Tabs>
   );
 }

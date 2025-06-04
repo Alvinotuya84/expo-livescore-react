@@ -1,12 +1,14 @@
-import { mutate } from '@livestore/react';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from '../../components/ui/LinearGradient';
-import { documentMutations } from '../../lib/livestore';
+import { events } from '../../lib/livestore';
+import { useStore } from '../../lib/store';
+import { generateUUID } from '../../lib/utils';
 
 export default function CreateDocument() {
   const router = useRouter();
+  const store = useStore();
   const [content, setContent] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -15,7 +17,17 @@ export default function CreateDocument() {
 
     setIsCreating(true);
     try {
-      await mutate(documentMutations.createDocument(content));
+      const id = generateUUID();
+      const now = Date.now();
+      await store.commit(events.documentCreated({
+        id,
+        content,
+        clientId: 'local',
+        clientTimestamp: now,
+        version: 1,
+        createdAt: now,
+        updatedAt: now
+      }));
       router.back();
     } catch (error) {
       console.error('Failed to create document:', error);

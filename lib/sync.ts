@@ -1,78 +1,99 @@
-import { useStore } from '@livestore/react';
+import { Store } from '@livestore/livestore';
 import { apiClient, Document, SyncResponse } from './api';
-import { documentMutations, syncMutations } from './livestore';
+import { events, queries, schema } from './livestore';
+
+type AppStore = Store<typeof schema>;
 
 // Helper to get client ID from sync state
-const getClientId = async () => {
-  const store = useStore();
-  const syncState = await store.mutate(syncMutations.updateSyncState(Date.now(), true));
-  return syncState.syncState[0].clientId;
+const getClientId = async (store: AppStore) => {
+  await store.commit(events.syncStateUpdated({
+    lastSyncTimestamp: Date.now(),
+    clientId: 'local',
+    isOnline: true
+  }));
+  const syncState = await store.query(queries.syncState$);
+  return syncState[0].clientId;
 };
 
 // Apply server changes to LiveStore
 export const applyServerChanges = (serverResponse: SyncResponse) => {
-  const mutations = {
-    documents: {
-      upsert: serverResponse.documents.map(doc => ({
-        ...doc,
-        serverTimestamp: serverResponse.timestamp
-      }))
-    }
-  };
-
-  return mutations;
+  return events.documentCreated({
+    id: serverResponse.documents[0].id,
+    content: serverResponse.documents[0].content,
+    clientId: 'local',
+    clientTimestamp: Date.now(),
+    version: 1,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  });
 };
 
 // Sync with server
-export const syncWithServer = async () => {
+export const syncWithServer = async (store: AppStore) => {
   try {
-    const store = useStore();
-    const clientId = await getClientId();
-    const syncState = await store.mutate(syncMutations.updateSyncState(Date.now(), true));
-    const lastSyncTimestamp = syncState.syncState[0].lastSyncTimestamp;
+    const clientId = await getClientId(store);
+    await store.commit(events.syncStateUpdated({
+      lastSyncTimestamp: Date.now(),
+      clientId,
+      isOnline: true
+    }));
+    const syncState = await store.query(queries.syncState$);
+    const lastSyncTimestamp = syncState[0].lastSyncTimestamp;
 
     // Get changes from server
     const serverResponse = await apiClient.sync(lastSyncTimestamp, clientId);
 
     // Apply server changes to LiveStore
-    await store.mutate(applyServerChanges(serverResponse));
+    await store.commit(applyServerChanges(serverResponse));
 
     // Update sync timestamp
-    await store.mutate(syncMutations.updateSyncState(serverResponse.timestamp, true));
+    await store.commit(events.syncStateUpdated({
+      lastSyncTimestamp: serverResponse.timestamp,
+      clientId,
+      isOnline: true
+    }));
 
     return serverResponse;
   } catch (error) {
     // Mark as offline on error
-    const store = useStore();
-    await store.mutate(syncMutations.updateSyncState(Date.now(), false));
+    await store.commit(events.syncStateUpdated({
+      lastSyncTimestamp: Date.now(),
+      clientId: 'local',
+      isOnline: false
+    }));
     throw error;
   }
 };
 
 // Handle conflict resolution
 export const resolveConflict = async (
+  store: AppStore,
   documentId: string,
   resolution: 'local' | 'server' | 'merged',
   mergedContent?: string
 ) => {
-  const store = useStore();
-  const clientId = await getClientId();
+  const clientId = await getClientId(store);
 
   // Update local state
-  await store.mutate(documentMutations.resolveConflict(documentId, resolution, mergedContent));
+  await store.commit(events.conflictResolved({
+    id: documentId,
+    resolution,
+    mergedContent: resolution === 'merged' ? (mergedContent ?? '') : null,
+    clientTimestamp: Date.now(),
+    updatedAt: Date.now()
+  }));
 
   // Send resolution to server
   await apiClient.resolveConflict({
     documentId,
     resolution,
-    mergedContent
+    mergedContent: resolution === 'merged' ? mergedContent : undefined
   });
 };
 
 // Upload local changes to server
-export const uploadLocalChanges = async (documents: Document[]) => {
-  const store = useStore();
-  const clientId = await getClientId();
+export const uploadLocalChanges = async (store: AppStore, documents: Document[]) => {
+  const clientId = await getClientId(store);
   
   for (const doc of documents) {
     try {
@@ -88,7 +109,13 @@ export const uploadLocalChanges = async (documents: Document[]) => {
     } catch (error: any) {
       if (error.status === 409) {
         // Handle conflict
-        await store.mutate(documentMutations.resolveConflict(doc.id, 'local'));
+        await store.commit(events.conflictResolved({
+          id: doc.id,
+          resolution: 'local',
+          mergedContent: null,
+          clientTimestamp: Date.now(),
+          updatedAt: Date.now()
+        }));
       } else {
         throw error;
       }

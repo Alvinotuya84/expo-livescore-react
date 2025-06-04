@@ -1,20 +1,31 @@
-import { useQuery as useLiveQuery } from '@livestore/react';
+import { useStore } from '@/lib/store';
+import { Store } from '@livestore/livestore';
+import { ReactApi, useQuery as useLiveQuery } from '@livestore/react';
 import { useMutation } from '@tanstack/react-query';
 import { Document } from '../lib/api';
 import { queries } from '../lib/livestore';
 import { syncWithServer, uploadLocalChanges } from '../lib/sync';
 
+// Helper function for LiveStore queries
+const useLiveStoreQuery = <T>(query: any) => {
+  const store = useStore();
+  console.log('store', store);
+  return useLiveQuery(query, {
+    store: store as Store & ReactApi // TODO: Fix type issue
+  }) as unknown as T;
+};
+
 // LiveStore queries
 export const useDocuments = () => {
-  return useLiveQuery(queries.activeDocuments$) as unknown as Document[];
+  return useLiveStoreQuery<Document[]>(queries.activeDocuments$);
 };
 
 export const useDocument = (id: string) => {
-  return useLiveQuery(queries.documentById$(id)) as unknown as Document;
+  return useLiveStoreQuery<Document>(queries.documentById$(id));
 };
 
 export const useConflicts = () => {
-  return useLiveQuery(queries.conflicts$) as unknown as Document[];
+  return useLiveStoreQuery<Document[]>(queries.conflicts$);
 };
 
 // React Query mutations
@@ -58,4 +69,4 @@ export const useDocumentOperations = () => {
     isSyncing: syncMutation.isPending || uploadMutation.isPending,
     error: syncMutation.error || uploadMutation.error
   };
-}; 
+};

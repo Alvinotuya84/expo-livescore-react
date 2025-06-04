@@ -1,15 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
 import { makePersistedAdapter } from '@livestore/adapter-expo';
 import type { Store } from '@livestore/livestore';
 import { createStorePromise } from '@livestore/livestore';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Tabs } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { unstable_batchedUpdates as batchUpdates, Text, View } from 'react-native';
+import 'react-native-get-random-values';
 import { queryClient } from '../lib/api';
 import { schema } from '../lib/livestore';
 import { StoreContext } from '../lib/store';
-
 // Create adapter with SQLite persistence
 const adapter = makePersistedAdapter();
 
@@ -23,9 +22,11 @@ export default function RootLayout() {
 
   useEffect(() => {
     let mounted = true;
+    console.log('Initializing store...');
 
     const initStore = async () => {
       try {
+        console.log('Creating store promise...');
         const newStore = await createStorePromise({
           schema,
           adapter,
@@ -34,10 +35,12 @@ export default function RootLayout() {
         });
         
         if (mounted) {
+          console.log('Store created successfully:', newStore);
           setStore(newStore);
           setIsLoading(false);
         }
       } catch (err) {
+        console.error('Store initialization failed:', err);
         if (mounted) {
           setError(err as Error);
           setIsLoading(false);
@@ -48,6 +51,7 @@ export default function RootLayout() {
     initStore();
 
     return () => {
+      console.log('Cleaning up store...');
       mounted = false;
       if (store) {
         store.shutdown();
@@ -56,6 +60,7 @@ export default function RootLayout() {
   }, []);
 
   if (error) {
+    console.error('Store error state:', error);
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ color: 'red' }}>Error: {error.message}</Text>
@@ -64,6 +69,7 @@ export default function RootLayout() {
   }
 
   if (isLoading || !store) {
+    console.log('Store loading state:', { isLoading, hasStore: !!store });
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text>Loading...</Text>
@@ -71,45 +77,15 @@ export default function RootLayout() {
     );
   }
 
+  console.log('Rendering app with store:', store);
   return (
-    <QueryClientProvider client={queryClient}>
-      <StoreContext.Provider value={store}>
-        <Tabs
-          screenOptions={{
-            tabBarActiveTintColor: '#007AFF',
-            tabBarInactiveTintColor: '#8E8E93',
-            headerShown: true,
-          }}
-        >
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: 'Documents',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="document-text" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="conflicts"
-            options={{
-              title: 'Conflicts',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="warning" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="settings"
-            options={{
-              title: 'Settings',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="settings" size={size} color={color} />
-              ),
-            }}
-          />
-        </Tabs>
-      </StoreContext.Provider>
-    </QueryClientProvider>
+    <StoreContext.Provider value={store}>
+      <QueryClientProvider client={queryClient}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </QueryClientProvider>
+    </StoreContext.Provider>
   );
 }

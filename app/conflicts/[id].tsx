@@ -3,11 +3,13 @@ import { useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from '../../components/ui/LinearGradient';
 import { useDocument } from '../../hooks/useDocuments';
+import { useStore } from '../../lib/store';
 import { resolveConflict } from '../../lib/sync';
 
 export default function ConflictResolver() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const store = useStore();
   const document = useDocument(id as string);
   const [mergedContent, setMergedContent] = useState('');
   const [isResolving, setIsResolving] = useState(false);
@@ -24,6 +26,7 @@ export default function ConflictResolver() {
     setIsResolving(true);
     try {
       await resolveConflict(
+        store,
         document.id,
         resolution,
         resolution === 'merged' ? mergedContent : undefined

@@ -12,7 +12,12 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
+    "@livestore/adapter-expo": "^0.3.0",
+    "@livestore/devtools-expo": "^0.3.0",
+    "@livestore/livestore": "^0.3.0",
+    "@livestore/peer-deps": "^0.3.0",
     "@livestore/react": "^0.3.0",
+    "@livestore/utils": "^0.3.0",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
@@ -27,6 +32,7 @@
     "expo-linking": "~7.1.5",
     "expo-router": "~5.0.7",
     "expo-splash-screen": "~0.30.8",
+    "expo-sqlite": "^15.2.10",
     "expo-status-bar": "~2.2.3",
     "expo-symbols": "~0.4.4",
     "expo-system-ui": "~5.0.7",
@@ -45,6 +51,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
+    "babel-plugin-transform-vite-meta-env": "^1.0.3",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "typescript": "~5.8.3"

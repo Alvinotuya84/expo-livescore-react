@@ -4,18 +4,16 @@ import { events, queries, schema } from './livestore';
 
 type AppStore = Store<typeof schema>;
 
-// Helper to get client ID from sync state
 const getClientId = async (store: AppStore) => {
-  await store.commit(events.syncStateUpdated({
+   store.commit(events.syncStateUpdated({
     lastSyncTimestamp: Date.now(),
     clientId: 'local',
     isOnline: true
   }));
-  const syncState = await store.query(queries.syncState$);
+  const syncState =  store.query(queries.syncState$);
   return syncState[0].clientId;
 };
 
-// Apply server changes to LiveStore
 export const applyServerChanges = (serverResponse: SyncResponse) => {
   return events.documentCreated({
     id: serverResponse.documents[0].id,
@@ -28,35 +26,29 @@ export const applyServerChanges = (serverResponse: SyncResponse) => {
   });
 };
 
-// Sync with server
 export const syncWithServer = async (store: AppStore) => {
   try {
     const clientId = await getClientId(store);
-    await store.commit(events.syncStateUpdated({
+     store.commit(events.syncStateUpdated({
       lastSyncTimestamp: Date.now(),
       clientId,
       isOnline: true
     }));
-    const syncState = await store.query(queries.syncState$);
+    const syncState = store.query(queries.syncState$);
     const lastSyncTimestamp = syncState[0].lastSyncTimestamp;
 
-    // Get changes from server
     const serverResponse = await apiClient.sync(lastSyncTimestamp, clientId);
 
-    // Apply server changes to LiveStore
-    await store.commit(applyServerChanges(serverResponse));
+     store.commit(applyServerChanges(serverResponse));
 
-    // Update sync timestamp
-    await store.commit(events.syncStateUpdated({
+     store.commit(events.syncStateUpdated({
       lastSyncTimestamp: serverResponse.timestamp,
       clientId,
       isOnline: true
     }));
-
     return serverResponse;
   } catch (error) {
-    // Mark as offline on error
-    await store.commit(events.syncStateUpdated({
+   store.commit(events.syncStateUpdated({
       lastSyncTimestamp: Date.now(),
       clientId: 'local',
       isOnline: false
@@ -65,7 +57,6 @@ export const syncWithServer = async (store: AppStore) => {
   }
 };
 
-// Handle conflict resolution
 export const resolveConflict = async (
   store: AppStore,
   documentId: string,
@@ -74,7 +65,6 @@ export const resolveConflict = async (
 ) => {
   const clientId = await getClientId(store);
 
-  // Update local state
   await store.commit(events.conflictResolved({
     id: documentId,
     resolution,
@@ -83,7 +73,6 @@ export const resolveConflict = async (
     updatedAt: Date.now()
   }));
 
-  // Send resolution to server
   await apiClient.resolveConflict({
     documentId,
     resolution,
@@ -91,7 +80,6 @@ export const resolveConflict = async (
   });
 };
 
-// Upload local changes to server
 export const uploadLocalChanges = async (store: AppStore, documents: Document[]) => {
   const clientId = await getClientId(store);
   
@@ -100,16 +88,13 @@ export const uploadLocalChanges = async (store: AppStore, documents: Document[])
       if (doc.isDeleted) {
         await apiClient.deleteDocument(doc.id, clientId);
       } else if (doc.serverTimestamp === undefined) {
-        // New document
         await apiClient.createDocument(doc.content);
       } else {
-        // Updated document
         await apiClient.updateDocument(doc.id, doc.content, doc.version);
       }
     } catch (error: any) {
       if (error.status === 409) {
-        // Handle conflict
-        await store.commit(events.conflictResolved({
+         store.commit(events.conflictResolved({
           id: doc.id,
           resolution: 'local',
           mergedContent: null,
@@ -121,4 +106,4 @@ export const uploadLocalChanges = async (store: AppStore, documents: Document[])
       }
     }
   }
-}; 
+};

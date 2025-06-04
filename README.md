@@ -1,50 +1,82 @@
-# Welcome to your Expo app 👋
+# Riffle Validation - Offline-First Demo 🚀
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Hey there! 👋 This is a fun little experiment showing how to build an offline-first mobile app with some cool conflict resolution features. Think of it as a playground for testing out some interesting ideas about data sync and offline capabilities.
 
-## Get started
+## What's This All About? 🤔
 
-1. Install dependencies
+This project is split into two parts:
 
-   ```bash
-   npm install
-   ```
+1. **Mobile App** ([expo-livescore-react](https://github.com/Alvinotuya84/expo-livescore-react)): A React Native app built with Expo that shows how to handle offline data and sync it back when you're back online.
 
-2. Start the app
+2. **Backend** ([riffle-offline-first-validation](https://github.com/Alvinotuya84/riffle-offline-first-validation)): A NestJS server that helps manage all the data sync and conflict resolution magic.
 
-   ```bash
-   npx expo start
-   ```
+## Cool Features ✨
 
-In the output, you'll find options to open the app in a
+- 📱 Works offline 
+- 🔄 Smart sync when you're back online
+- 🤝 Handles conflicts like a boss
+- 🚀 Built with Expo for easy development
+- 💾 Uses LiveStore for state management
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Quick Start 🏃‍♂️
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### Mobile App
 
 ```bash
-npm run reset-project
+# Clone the mobile app
+git clone https://github.com/Alvinotuya84/expo-livescore-react.git
+cd expo-livescore-react
+
+# Install dependencies
+npm install
+
+# Start the app
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Backend
 
-## Learn more
+```bash
+# Clone the backend
+git clone https://github.com/Alvinotuya84/riffle-offline-first-validation.git
+cd riffle-offline-first-validation
 
-To learn more about developing your project with Expo, look at the following resources:
+# Install dependencies
+npm install
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+# Start the server
+npm run start:dev
+```
 
-## Join the community
+## How It Works 🛠️
 
-Join our community of developers creating universal apps.
+1. The app stores data locally when you're offline
+2. When you're back online, it syncs with the server
+3. If there are any conflicts (like someone else changed the same data), it helps you resolve them
+4. Everything stays in sync, even when your internet connection is spotty
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Tech Stack 🛠️
+
+- **Mobile**: React Native, Expo, LiveStore
+- **Backend**: NestJS, PostgreSQL
+- **Sync Engine**: Custom implementation for conflict resolution
+
+## Why This Matters 🌟
+
+It's a proof of concept showing how to build apps that work great even when your internet connection isn't perfect. Perfect for:
+- Travel apps
+- Field work applications
+- Places with spotty internet
+- Any app where offline support is crucial
+
+## Contributing 🤝
+
+Feel free to play around with this code! If you find any bugs or have cool ideas, just open an issue or submit a PR.
+
+## License 📝
+
+MIT License - feel free to use this however you want!
+
+---
+
+Made with ❤️ by [Alvin Otuya](https://github.com/Alvinotuya84)
